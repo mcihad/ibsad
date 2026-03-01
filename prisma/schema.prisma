@@ -1,0 +1,386 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  KUTUPHANECI
+  MEMUR
+}
+
+enum Gender {
+  ERKEK
+  KADIN
+}
+
+enum KitapDurumu {
+  MEVCUT
+  ODUNC
+  KAYIP
+  HASARLI
+  AYIKLANDI
+}
+
+enum KitapFizikselDurum {
+  MUKEMMEL
+  COK_IYI
+  IYI
+  ORTA
+  KOTU
+}
+
+enum OduncDurumu {
+  AKTIF
+  IADE_EDILDI
+  GECIKMIS
+  KAYIP
+  IPTAL
+}
+
+enum DevirDurumu {
+  TASLAK
+  TESLIM_BEKLIYOR
+  ONAY_BEKLIYOR
+  ONAYLANDI
+  IADE_EDILDI
+}
+
+enum YaziciTuru {
+  ETIKET_YAZICI
+  A4
+}
+
+enum BarkodFormati {
+  CODE128
+  CODE39
+  EAN13
+  EAN8
+  QR
+}
+
+model User {
+  id          String   @id @default(cuid())
+  tcKimlikNo  String   @unique @map("tc_kimlik_no")
+  email       String   @unique
+  password    String
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  phone       String?
+  gender      Gender?
+  birthDate   DateTime? @map("birth_date")
+  department  String?
+  title       String?
+  role        Role     @default(MEMUR)
+  avatar      String?
+  isActive    Boolean  @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  kutuphaneId String?    @map("kutuphane_id")
+  kutuphane   Kutuphane? @relation(fields: [kutuphaneId], references: [id])
+
+  olusturulanUyeler Uye[]   @relation("UyeOlusturan")
+  olusturulanOduncler Odunc[] @relation("OduncOlusturan")
+  olusturulanEtiketTasarimlari EtiketTasarimi[] @relation("EtiketTasarimiOlusturan")
+  olusturulanEtiketListeleri   EtiketListesi[]  @relation("EtiketListesiOlusturan")
+
+  // Devir ilişkileri
+  olusturulanDevirler  DevirFisi[] @relation("DevirOlusturan")
+  teslimEdenDevirler   DevirFisi[] @relation("DevirTeslimEden")
+  teslimAlanDevirler   DevirFisi[] @relation("DevirTeslimAlan")
+  onaylayanDevirler    DevirFisi[] @relation("DevirOnaylayan")
+
+  @@map("users")
+}
+
+model Kutuphane {
+  id        String   @id @default(cuid())
+  adi       String
+  kodu      String   @unique
+  aciklama  String?
+  adres     String?
+  telefon   String?
+  eposta    String?
+  webSitesi String?  @map("web_sitesi")
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  kitaplar       Kitap[]
+  kullanicilar   User[]
+  uyeler         Uye[]
+  oduncler       Odunc[]
+  etiketListeleri EtiketListesi[]
+  cikisDevirleri  DevirFisi[] @relation("DevirCikisKutuphane")
+  girisDevirleri  DevirFisi[] @relation("DevirGirisKutuphane")
+
+  @@map("kutuphaneler")
+}
+
+model Kitap {
+  id             String              @id @default(cuid())
+  uuid           String              @unique @default(uuid())
+  isbn           String?
+  baslik         String
+  demirbasNo     String?             @map("demirbas_no")
+  barkod         String?
+  yayinevi       String?
+  dil            String?
+  yayinYili      Int?                @map("yayin_yili")
+  sayfaSayisi    Int?                @map("sayfa_sayisi")
+  kapakResmi     String?             @map("kapak_resmi")
+  durum          KitapDurumu         @default(MEVCUT)
+  fizikselDurum  KitapFizikselDurum  @default(IYI) @map("fiziksel_durum")
+  ozet           String?
+  notlar         String?
+  yazarlar       String?
+  aktif          Boolean             @default(true)
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  kutuphaneId    String              @map("kutuphane_id")
+  kutuphane      Kutuphane           @relation(fields: [kutuphaneId], references: [id], onDelete: Cascade)
+
+  oduncler             Odunc[]
+  etiketListesiKitaplar EtiketListesiKitap[]
+  devirFisiKitaplar    DevirFisiKitap[]
+
+  @@index([isbn])
+  @@index([barkod])
+  @@index([durum])
+  @@map("kitaplar")
+}
+
+model UyeTipi {
+  id             String   @id @default(cuid())
+  adi            String
+  aciklama       String?
+  maksimumKitap  Int      @default(3) @map("maksimum_kitap")
+  oduncSuresi    Int      @default(15) @map("odunc_suresi")
+  gunlukCeza     Decimal  @default(1.00) @map("gunluk_ceza") @db.Decimal(10, 2)
+  aktif          Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  uyeler         Uye[]
+
+  @@map("uye_tipleri")
+}
+
+model Uye {
+  id             String    @id @default(cuid())
+  uuid           String    @unique @default(uuid())
+  adi            String
+  soyadi         String
+  tcKimlikNo     String?   @map("tc_kimlik_no")
+  kartNumarasi   String?   @map("kart_numarasi")
+  eposta         String?
+  telefon        String?
+  adres          String?
+  kayitTarihi    DateTime  @default(now()) @map("kayit_tarihi")
+  bitisTarihi    DateTime? @map("bitis_tarihi")
+  notlar         String?
+  aktif          Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  uyeTipiId      String    @map("uye_tipi_id")
+  uyeTipi        UyeTipi   @relation(fields: [uyeTipiId], references: [id], onDelete: Restrict)
+
+  kutuphaneId    String    @map("kutuphane_id")
+  kutuphane      Kutuphane @relation(fields: [kutuphaneId], references: [id], onDelete: Restrict)
+
+  olusturanId    String?   @map("olusturan_id")
+  olusturan      User?     @relation("UyeOlusturan", fields: [olusturanId], references: [id], onDelete: SetNull)
+
+  oduncler       Odunc[]
+
+  @@index([tcKimlikNo])
+  @@index([kartNumarasi])
+  @@map("uyeler")
+}
+
+model Odunc {
+  id              String       @id @default(cuid())
+  uuid            String       @unique @default(uuid())
+  oduncTarihi     DateTime     @default(now()) @map("odunc_tarihi")
+  sonIadeTarihi   DateTime     @map("son_iade_tarihi")
+  iadeTarihi      DateTime?    @map("iade_tarihi")
+  uzatmaSayisi    Int          @default(0) @map("uzatma_sayisi")
+  maksimumUzatma  Int          @default(2) @map("maksimum_uzatma")
+  durum           OduncDurumu  @default(AKTIF)
+  gecikmeCezasi   Decimal?     @map("gecikme_cezasi") @db.Decimal(10, 2)
+  cezaOdendi      Boolean      @default(false) @map("ceza_odendi")
+  notlar          String?
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  kitapId         String       @map("kitap_id")
+  kitap           Kitap        @relation(fields: [kitapId], references: [id], onDelete: Restrict)
+
+  uyeId           String       @map("uye_id")
+  uye             Uye          @relation(fields: [uyeId], references: [id], onDelete: Restrict)
+
+  kutuphaneId     String       @map("kutuphane_id")
+  kutuphane       Kutuphane    @relation(fields: [kutuphaneId], references: [id], onDelete: Restrict)
+
+  olusturanId     String?      @map("olusturan_id")
+  olusturan       User?        @relation("OduncOlusturan", fields: [olusturanId], references: [id], onDelete: SetNull)
+
+  @@index([durum])
+  @@index([sonIadeTarihi])
+  @@map("odunc_islemleri")
+}
+
+model EtiketTasarimi {
+  id               String      @id @default(cuid())
+  uuid             String      @unique @default(uuid())
+  adi              String
+  aciklama         String?
+
+  // Etiket boyutları (mm)
+  etiketGenislik   Float       @default(70)  @map("etiket_genislik")
+  etiketYukseklik  Float       @default(30)  @map("etiket_yukseklik")
+
+  // Yazıcı türü ve A4 ayarları
+  yaziciTuru       YaziciTuru  @default(ETIKET_YAZICI) @map("yazici_turu")
+  sayfaGenislik    Float?      @default(210) @map("sayfa_genislik")
+  sayfaYukseklik   Float?      @default(297) @map("sayfa_yukseklik")
+  satirSayisi      Int?        @default(10)  @map("satir_sayisi")
+  sutunSayisi      Int?        @default(3)   @map("sutun_sayisi")
+  sayfaKenarUst    Float?      @default(10)  @map("sayfa_kenar_ust")
+  sayfaKenarAlt    Float?      @default(10)  @map("sayfa_kenar_alt")
+  sayfaKenarSol    Float?      @default(5)   @map("sayfa_kenar_sol")
+  sayfaKenarSag    Float?      @default(5)   @map("sayfa_kenar_sag")
+  satirAraligi     Float?      @default(0)   @map("satir_araligi")
+  sutunAraligi     Float?      @default(0)   @map("sutun_araligi")
+
+  // Şablon — JSON (LabelElement[] dizisi)
+  sablon           String      @db.Text
+
+  varsayilan       Boolean     @default(false)
+  aktif            Boolean     @default(true)
+
+  olusturanId      String?     @map("olusturan_id")
+  olusturan        User?       @relation("EtiketTasarimiOlusturan", fields: [olusturanId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt      @map("updated_at")
+
+  etiketListeleri  EtiketListesi[]
+
+  @@map("etiket_tasarimlari")
+}
+
+model EtiketListesi {
+  id               String           @id @default(cuid())
+  uuid             String           @unique @default(uuid())
+  adi              String
+  aciklama         String?
+
+  tasarimId        String           @map("tasarim_id")
+  tasarim          EtiketTasarimi   @relation(fields: [tasarimId], references: [id], onDelete: Restrict)
+
+  kutuphaneId      String           @map("kutuphane_id")
+  kutuphane        Kutuphane        @relation(fields: [kutuphaneId], references: [id], onDelete: Restrict)
+
+  olusturanId      String?          @map("olusturan_id")
+  olusturan        User?            @relation("EtiketListesiOlusturan", fields: [olusturanId], references: [id], onDelete: SetNull)
+
+  aktif            Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt      @map("updated_at")
+
+  kitaplar         EtiketListesiKitap[]
+
+  @@map("etiket_listeleri")
+}
+
+model EtiketListesiKitap {
+  id          String        @id @default(cuid())
+
+  listeId     String        @map("liste_id")
+  liste       EtiketListesi @relation(fields: [listeId], references: [id], onDelete: Cascade)
+
+  kitapId     String        @map("kitap_id")
+  kitap       Kitap         @relation(fields: [kitapId], references: [id], onDelete: Cascade)
+
+  adet        Int           @default(1)
+  sira        Int           @default(0)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@unique([listeId, kitapId])
+  @@map("etiket_listesi_kitaplar")
+}
+
+model DevirFisi {
+  id              String       @id @default(cuid())
+  uuid            String       @unique @default(uuid())
+  fisNo           String       @unique @map("fis_no")
+  aciklama        String?
+  durum           DevirDurumu  @default(TASLAK)
+  notlar          String?
+
+  // İade / Red nedeni
+  iadenedeni      String?      @map("iade_nedeni")
+
+  // Tarihler
+  teslimTarihi    DateTime?    @map("teslim_tarihi")
+  onayTarihi      DateTime?    @map("onay_tarihi")
+
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  // Kütüphaneler
+  cikisKutuphaneId  String     @map("cikis_kutuphane_id")
+  cikisKutuphane    Kutuphane  @relation("DevirCikisKutuphane", fields: [cikisKutuphaneId], references: [id], onDelete: Restrict)
+
+  girisKutuphaneId  String     @map("giris_kutuphane_id")
+  girisKutuphane    Kutuphane  @relation("DevirGirisKutuphane", fields: [girisKutuphaneId], references: [id], onDelete: Restrict)
+
+  // Kişiler
+  olusturanId     String?      @map("olusturan_id")
+  olusturan       User?        @relation("DevirOlusturan", fields: [olusturanId], references: [id], onDelete: SetNull)
+
+  teslimEdenId    String       @map("teslim_eden_id")
+  teslimEden      User         @relation("DevirTeslimEden", fields: [teslimEdenId], references: [id], onDelete: Restrict)
+
+  teslimAlanId    String       @map("teslim_alan_id")
+  teslimAlan      User         @relation("DevirTeslimAlan", fields: [teslimAlanId], references: [id], onDelete: Restrict)
+
+  onaylayanId     String       @map("onaylayan_id")
+  onaylayan       User         @relation("DevirOnaylayan", fields: [onaylayanId], references: [id], onDelete: Restrict)
+
+  kitaplar        DevirFisiKitap[]
+
+  @@index([durum])
+  @@index([fisNo])
+  @@map("devir_fisleri")
+}
+
+model DevirFisiKitap {
+  id          String    @id @default(cuid())
+
+  devirFisiId String    @map("devir_fisi_id")
+  devirFisi   DevirFisi @relation(fields: [devirFisiId], references: [id], onDelete: Cascade)
+
+  kitapId     String    @map("kitap_id")
+  kitap       Kitap     @relation(fields: [kitapId], references: [id], onDelete: Restrict)
+
+  sira        Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([devirFisiId, kitapId])
+  @@map("devir_fisi_kitaplar")
+}

@@ -4,8 +4,6 @@ import * as React from "react";
 import { AppSidebar, SidebarTrigger } from "@/components/app-sidebar";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -55,12 +53,6 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="relative">
-                            <Bell className="h-4 w-4" />
-                            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                                3
-                            </span>
-                        </Button>
                         <ThemeToggle />
                     </div>
                 </header>

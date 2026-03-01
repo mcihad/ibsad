@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { EChart } from "@/components/charts/echart";
@@ -305,7 +306,7 @@ export default function DashboardClient({ user }: { user: SessionUser }) {
                                 {data.sonEklenenKitaplar.length === 0 ? (
                                     <p className="text-sm text-muted-foreground text-center py-4">Henüz kitap eklenmemiş</p>
                                 ) : data.sonEklenenKitaplar.map((k) => (
-                                    <div key={k.id} className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/30">
+                                    <Link key={k.id} href={`/kitaplar/${k.id}`} className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/30">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30">
                                             <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                         </div>
@@ -323,7 +324,7 @@ export default function DashboardClient({ user }: { user: SessionUser }) {
                                                 {new Date(k.createdAt).toLocaleDateString("tr-TR")}
                                             </span>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </CardContent>
@@ -344,7 +345,7 @@ export default function DashboardClient({ user }: { user: SessionUser }) {
                                 ) : data.sonOduncler.map((o) => {
                                     const gecikmi = o.durum === "AKTIF" && new Date(o.sonIadeTarihi) < new Date();
                                     return (
-                                        <div key={o.id} className={cn(
+                                        <Link key={o.id} href={`/odunc-islemleri/${o.id}`} className={cn(
                                             "flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/30",
                                             gecikmi && "border-red-200 dark:border-red-800/50"
                                         )}>
@@ -378,7 +379,7 @@ export default function DashboardClient({ user }: { user: SessionUser }) {
                                                     {new Date(o.oduncTarihi).toLocaleDateString("tr-TR")}
                                                 </span>
                                             </div>
-                                        </div>
+                                        </Link>
                                     );
                                 })}
                             </div>

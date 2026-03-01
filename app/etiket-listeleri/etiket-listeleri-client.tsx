@@ -297,39 +297,54 @@ async function renderLabelToPDF(
             if (value) {
                 try {
                     const isVertical = el.barcodeRotation === 90;
-                    // For vertical, render barcode in horizontal orientation first
-                    const renderW = isVertical ? el.height : el.width;
-                    const renderH = isVertical ? el.width : el.height;
-                    const { dataUrl, naturalWidth, naturalHeight } = await generateBarcodeDataUrl(value, el.barcodeFormat ?? "CODE128", renderW * 3, renderH * 3);
-                    // Preserve aspect ratio to avoid stretch
-                    const barcodeAspect = naturalWidth / naturalHeight;
-                    const targetAspect = renderW / renderH;
-                    let imgW = renderW;
-                    let imgH = renderH;
-                    if (barcodeAspect > targetAspect) {
-                        imgH = renderW / barcodeAspect;
-                    } else {
-                        imgW = renderH * barcodeAspect;
-                    }
-                    const imgX = (renderW - imgW) / 2;
-                    const imgY = (renderH - imgH) / 2;
 
                     if (isVertical) {
-                        // Rotate 90° for vertical barcode
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const internal = (pdf as any).internal;
-                        internal.write('q');
-                        // Translate to target position, then rotate 90°
-                        const rad = Math.PI / 2;
-                        const cos = Math.cos(rad);
-                        const sin = Math.sin(rad);
-                        // Move origin to (x + width, y) then rotate 90° CW
-                        internal.write(
-                            `${cos.toFixed(6)} ${sin.toFixed(6)} ${(-sin).toFixed(6)} ${cos.toFixed(6)} ${((x + el.width) * 72 / 25.4).toFixed(4)} ${((pdf.internal.pageSize.getHeight() - y) * 72 / 25.4).toFixed(4)} cm`
+                        // Generate barcode in horizontal orientation with swapped dimensions
+                        // (el.height as width, el.width as height) so bars run along the longer axis
+                        const { dataUrl, naturalWidth, naturalHeight } = await generateBarcodeDataUrl(
+                            value, el.barcodeFormat ?? "CODE128", el.height * 3, el.width * 3
                         );
-                        pdf.addImage(dataUrl, "PNG", imgX, imgY, imgW, imgH);
-                        internal.write('Q');
+                        // Rotate on canvas
+                        const tmpImg = new window.Image();
+                        tmpImg.src = dataUrl;
+                        await new Promise<void>((resolve) => { tmpImg.onload = () => resolve(); });
+                        const rotCanvas = document.createElement("canvas");
+                        rotCanvas.width = naturalHeight;
+                        rotCanvas.height = naturalWidth;
+                        const rotCtx = rotCanvas.getContext("2d")!;
+                        rotCtx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
+                        rotCtx.rotate(Math.PI / 2);
+                        rotCtx.drawImage(tmpImg, -naturalWidth / 2, -naturalHeight / 2);
+                        const rotatedDataUrl = rotCanvas.toDataURL("image/png");
+                        // Fit rotated image into el.width × el.height preserving aspect ratio
+                        const rotAspect = rotCanvas.width / rotCanvas.height;
+                        const boxAspect = el.width / el.height;
+                        let finalW = el.width;
+                        let finalH = el.height;
+                        if (rotAspect > boxAspect) {
+                            finalH = el.width / rotAspect;
+                        } else {
+                            finalW = el.height * rotAspect;
+                        }
+                        const offsetX = (el.width - finalW) / 2;
+                        const offsetY = (el.height - finalH) / 2;
+                        pdf.addImage(rotatedDataUrl, "PNG", x + offsetX, y + offsetY, finalW, finalH);
                     } else {
+                        const { dataUrl, naturalWidth, naturalHeight } = await generateBarcodeDataUrl(
+                            value, el.barcodeFormat ?? "CODE128", el.width * 3, el.height * 3
+                        );
+                        // Fit into el.width × el.height preserving aspect ratio
+                        const barcodeAspect = naturalWidth / naturalHeight;
+                        const boxAspect = el.width / el.height;
+                        let imgW = el.width;
+                        let imgH = el.height;
+                        if (barcodeAspect > boxAspect) {
+                            imgH = el.width / barcodeAspect;
+                        } else {
+                            imgW = el.height * barcodeAspect;
+                        }
+                        const imgX = (el.width - imgW) / 2;
+                        const imgY = (el.height - imgH) / 2;
                         pdf.addImage(dataUrl, "PNG", x + imgX, y + imgY, imgW, imgH);
                     }
                 } catch { /* ignore */ }

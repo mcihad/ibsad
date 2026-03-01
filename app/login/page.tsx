@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, LogIn, Loader2, BookOpen, Users, Library, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, LogIn, Loader2, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -44,88 +43,68 @@ export default function LoginPage() {
 
     return (
         <div className="flex min-h-screen">
-            {/* Left panel — branding / illustration */}
-            <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-slate-900 p-10 lg:flex xl:w-[55%]">
-                {/* Background pattern */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-                <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-blue-500/8 blur-3xl" />
-                <div className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-indigo-500/5 blur-3xl" />
+            {/* Left panel — immersive visual */}
+            <div className="relative hidden w-1/2 overflow-hidden lg:flex xl:w-[55%]">
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.15),transparent_60%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(30,64,175,0.2),transparent_60%)]" />
 
-                {/* Logo */}
-                <div className="relative z-10 flex items-center gap-3">
-                    <Image
-                        src="/logo.png"
-                        alt="İBSAD Logo"
-                        width={38}
-                        height={38}
-                        className="rounded-lg"
-                    />
-                    <span className="text-lg font-bold text-slate-100 tracking-wide">İBSAD</span>
-                </div>
+                {/* Floating geometric shapes */}
+                <div className="absolute left-[15%] top-[20%] h-64 w-64 rounded-full bg-white/[0.07] blur-xl animate-pulse" style={{ animationDuration: '6s' }} />
+                <div className="absolute right-[10%] bottom-[30%] h-48 w-48 rounded-full bg-white/[0.05] blur-xl animate-pulse" style={{ animationDuration: '8s', animationDelay: '2s' }} />
+                <div className="absolute left-[40%] bottom-[10%] h-32 w-32 rounded-full bg-blue-400/[0.06] blur-xl animate-pulse" style={{ animationDuration: '7s', animationDelay: '4s' }} />
 
-                {/* Center content */}
-                <div className="relative z-10 space-y-8">
-                    <div className="space-y-4">
-                        <h1 className="text-4xl font-bold leading-tight text-slate-100 xl:text-5xl">
+                {/* Grid overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:80px_80px]" />
+
+                {/* Content */}
+                <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+                    {/* Logo */}
+                    <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src="/logo.png"
+                            alt="İBSAD Logo"
+                            width={40}
+                            height={40}
+                            className="rounded-xl shadow-lg shadow-black/20"
+                        />
+                        <span className="text-xl font-bold text-white tracking-wide">İBSAD</span>
+                    </div>
+
+                    {/* Center — Hero text */}
+                    <div className="space-y-6 max-w-lg">
+                        <h1 className="text-[3.5rem] font-extrabold leading-[1.1] text-white drop-shadow-sm">
                             Kütüphane
                             <br />
-                            <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent">
-                                Otomasyon Sistemi
+                            <span className="text-blue-200/70">Otomasyon</span>
+                            <br />
+                            <span className="bg-gradient-to-r from-blue-300 to-sky-300 bg-clip-text text-transparent">
+                                Sistemi
                             </span>
                         </h1>
-                        <p className="max-w-md text-lg text-slate-400">
-                            İlçe Bilgi Sistemleri Arşiv Düzeni ile kütüphane yönetimini
-                            dijitalleştirin.
+                        <p className="text-lg text-white/60 leading-relaxed max-w-sm">
+                            İlçe Bilgi Sistemleri Arşiv Düzeni ile kütüphane yönetimini dijitalleştirin.
                         </p>
+
+                        {/* Stats row */}
+                        <div className="flex gap-8 pt-4">
+                            {[
+                                { value: "∞", label: "Kitap Kapasitesi" },
+                                { value: "7/24", label: "Erişim" },
+                                { value: "100%", label: "Dijital" },
+                            ].map((s) => (
+                                <div key={s.label}>
+                                    <p className="text-3xl font-bold text-white">{s.value}</p>
+                                    <p className="text-xs text-white/50 mt-1 uppercase tracking-wider">{s.label}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Feature cards */}
-                    <div className="grid max-w-md gap-3">
-                        {[
-                            {
-                                icon: BookOpen,
-                                title: "Kitap Yönetimi",
-                                desc: "MARC desteği ile kataloglama",
-                                accent: "from-blue-500/20 to-blue-600/5",
-                                iconColor: "text-blue-400",
-                            },
-                            {
-                                icon: Users,
-                                title: "Üye Takibi",
-                                desc: "Ödünç, iade ve ceza işlemleri",
-                                accent: "from-emerald-500/20 to-emerald-600/5",
-                                iconColor: "text-emerald-400",
-                            },
-                            {
-                                icon: Library,
-                                title: "Çoklu Kütüphane",
-                                desc: "Merkezi yönetim altyapısı",
-                                accent: "from-violet-500/20 to-violet-600/5",
-                                iconColor: "text-violet-400",
-                            },
-                        ].map((f) => (
-                            <div
-                                key={f.title}
-                                className="flex items-center gap-4 rounded-xl border border-slate-700/20 bg-gradient-to-r p-4"
-                                style={{
-                                    backgroundImage: `linear-gradient(to right, var(--tw-gradient-stops))`,
-                                }}
-                            >
-                                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${f.accent}`}>
-                                    <f.icon className={`h-5 w-5 ${f.iconColor}`} />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-slate-200">{f.title}</p>
-                                    <p className="text-xs text-slate-500">{f.desc}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="relative z-10">
-                    <p className="text-xs text-slate-600">
+                    {/* Footer */}
+                    <p className="text-xs text-white/30">
                         Sivas Cumhuriyet Üniversitesi
                         <br />
                         Kütüphane ve Dökümantasyon Daire Başkanlığı
@@ -138,7 +117,8 @@ export default function LoginPage() {
                 <div className="w-full max-w-[380px]">
                     {/* Mobile only logo */}
                     <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                             src="/logo.png"
                             alt="İBSAD Logo"
                             width={38}

@@ -25,7 +25,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { cn } from "@/lib/utils";
 import {
     type LabelElement, type PrinterType,
-    BOOK_FIELDS, SAMPLE_BOOK, LABEL_PRESETS, A4_PRESETS,
+    BOOK_FIELDS, SAMPLE_BOOK, LABEL_PRESETS, A4_PRESETS, getSampleBarcodeValue,
     defaultTextElement, defaultBarcodeElement, defaultQRElement,
     defaultLineElement, defaultRectangleElement,
 } from "@/lib/etiket-types";
@@ -208,17 +208,30 @@ function LabelPreview({ elements, labelW, labelH, bookData, scale, selected, onS
                             </div>
                         )}
 
-                        {el.type === "barcode" && (
-                            <BarcodePreview
-                                value={processTemplate(el.content ?? "", bookData)}
-                                format={el.barcodeFormat ?? "CODE128"}
-                                width={el.width}
-                                height={el.height}
-                                showText={el.showText}
-                                scale={scale}
-                                rotation={el.barcodeRotation}
-                            />
-                        )}
+                        {el.type === "barcode" && (() => {
+                            const format = el.barcodeFormat ?? "CODE128";
+                            let barcodeValue = processTemplate(el.content ?? "", bookData);
+                            // If the preview value isn't compatible with the format, use a format-specific sample
+                            if (format === "EAN13" || format === "EAN8") {
+                                const sampleVal = getSampleBarcodeValue(format);
+                                // Check if current value is valid for this format
+                                const expectedLen = format === "EAN13" ? 13 : 8;
+                                if (!/^\d+$/.test(barcodeValue) || (barcodeValue.length !== expectedLen && barcodeValue.length !== expectedLen - 1)) {
+                                    barcodeValue = sampleVal;
+                                }
+                            }
+                            return (
+                                <BarcodePreview
+                                    value={barcodeValue}
+                                    format={format}
+                                    width={el.width}
+                                    height={el.height}
+                                    showText={el.showText}
+                                    scale={scale}
+                                    rotation={el.barcodeRotation}
+                                />
+                            );
+                        })()}
 
                         {el.type === "qrcode" && (
                             <QRPreview

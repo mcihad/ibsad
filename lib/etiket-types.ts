@@ -77,6 +77,18 @@ export const SAMPLE_BOOK: Record<string, string> = Object.fromEntries(
     BOOK_FIELDS.map((f) => [f.key, f.example])
 );
 
+/** Format-specific sample barcode values for design preview */
+export const BARCODE_SAMPLE_VALUES: Record<string, string> = {
+    CODE128: "BRK-000001",
+    CODE39: "BRK-000001",
+    EAN13: "9789750730481",
+    EAN8: "97897507",
+};
+
+export function getSampleBarcodeValue(format: string): string {
+    return BARCODE_SAMPLE_VALUES[format] || "BRK-000001";
+}
+
 // ── Transform Fonksiyonları ─────────────────────────────────────────────────
 
 export interface TransformDef {

@@ -104,6 +104,7 @@ function BarcodePreviewMini({ value, format, width, height, showText, scale, rot
     const isVertical = rotation === 90;
     const barcodeW = isVertical ? height : width;
     const barcodeH = isVertical ? width : height;
+
     React.useEffect(() => {
         if (!svgRef.current || !value) return;
         import("jsbarcode").then((JsBarcode) => {
@@ -115,6 +116,7 @@ function BarcodePreviewMini({ value, format, width, height, showText, scale, rot
             } catch { if (svgRef.current) svgRef.current.innerHTML = ""; }
         });
     }, [value, format, barcodeW, barcodeH, showText, scale]);
+
     return <svg ref={svgRef} style={{
         width: mmToPx(barcodeW, scale), height: mmToPx(barcodeH, scale), overflow: "hidden",
         ...(isVertical ? {
@@ -181,11 +183,11 @@ function bookToData(kitap: ListeKitap["kitap"]): Record<string, string> {
     };
 }
 
-async function generateBarcodeDataUrl(value: string, format: string, _w: number, h: number): Promise<{ dataUrl: string; naturalWidth: number; naturalHeight: number }> {
+async function generateBarcodeDataUrl(value: string, format: string, _w: number, h: number, showText: boolean = false): Promise<{ dataUrl: string; naturalWidth: number; naturalHeight: number }> {
     const canvas = document.createElement("canvas");
     const JsBarcode = (await import("jsbarcode")).default;
     try {
-        JsBarcode(canvas, value, { format, width: 2, height: h, displayValue: false, margin: 0 });
+        JsBarcode(canvas, value, { format, width: 2, height: h, displayValue: showText, margin: 0 });
     } catch {
         canvas.width = _w;
         canvas.height = h;
@@ -297,12 +299,12 @@ async function renderLabelToPDF(
             if (value) {
                 try {
                     const isVertical = el.barcodeRotation === 90;
+                    const showText = el.showText ?? true;
 
                     if (isVertical) {
                         // Generate barcode in horizontal orientation with swapped dimensions
-                        // (el.height as width, el.width as height) so bars run along the longer axis
                         const { dataUrl, naturalWidth, naturalHeight } = await generateBarcodeDataUrl(
-                            value, el.barcodeFormat ?? "CODE128", el.height * 3, el.width * 3
+                            value, el.barcodeFormat ?? "CODE128", el.height * 3, el.width * 3, showText
                         );
                         // Rotate on canvas
                         const tmpImg = new window.Image();
@@ -331,7 +333,7 @@ async function renderLabelToPDF(
                         pdf.addImage(rotatedDataUrl, "PNG", x + offsetX, y + offsetY, finalW, finalH);
                     } else {
                         const { dataUrl, naturalWidth, naturalHeight } = await generateBarcodeDataUrl(
-                            value, el.barcodeFormat ?? "CODE128", el.width * 3, el.height * 3
+                            value, el.barcodeFormat ?? "CODE128", el.width * 3, el.height * 3, showText
                         );
                         // Fit into el.width × el.height preserving aspect ratio
                         const barcodeAspect = naturalWidth / naturalHeight;
